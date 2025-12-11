@@ -13,12 +13,15 @@ pipeline {
     stages {
 
         stage('Configure AWS Credentials') {
-            steps {
-                withCredentials([aws(credentialsId: 'aws-creds', region: "${AWS_REGION}")]) {
-                    sh 'echo "AWS Credentials loaded."'
-                }
-            }
+    steps {
+        withAWS(credentials: 'aws-creds', region: "${AWS_REGION}") {
+            sh '''
+                echo "AWS Credentials loaded."
+                aws sts get-caller-identity
+            '''
         }
+    }
+}
 
         stage('Clone Repository') {
             steps {
