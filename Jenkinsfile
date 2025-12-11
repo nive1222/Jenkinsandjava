@@ -30,7 +30,14 @@ pipeline {
 
         stage('Clone Repository') {
             steps {
-                git url: "${GIT_REPO}", branch: 'main'
+                checkout([
+    $class: 'GitSCM',
+    branches: [[name: 'main']],
+    userRemoteConfigs: [[
+        url: "${GIT_REPO}",
+        credentialsId: 'github-creds'
+    ]]
+])
             }
         }
 
