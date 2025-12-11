@@ -5,46 +5,20 @@ pipeline {
         GIT_REPO = 'https://github.com/nive1222/Jenkinsandjava.git'
         AWS_REGION = 'ap-south-1'
         ECR_REPO_NAME = 'paswan2527'
-        ECR_PUBLIC_REPO_URI = 'public.ecr.aws/d4e4e2u2/paswan2527'
-        IMAGE_TAG = 'latest'
         AWS_ACCOUNT_ID = '843922065696'
-        IMAGE_URI = "${ECR_PUBLIC_REPO_URI}:${IMAGE_TAG}"
+        IMAGE_TAG = 'latest'
+        IMAGE_URI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}:${IMAGE_TAG}"
     }
 
     stages {
-        stage('Install AWS CLI') {
-            steps {
-                script {
-                    sh '''
-                        set -e
-                        echo "Installing AWS CLI..."
-                        sudo apt update && sudo apt install -y unzip curl
 
-                        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-                        rm -rf aws
-                        unzip -q awscliv2.zip
-                        sudo ./aws/install --update
-                        aws --version
-                    '''
+        stage('Configure AWS Credentials') {
+            steps {
+                withCredentials([aws(credentialsId: 'aws-creds', region: "${AWS_REGION}")]) {
+                    sh 'echo "AWS Credentials loaded."'
                 }
             }
         }
-
-             stage('Configure AWS Credentials') {
-    steps {
-        script {
-            sh '''
-            echo "Setting up AWS credentials for Jenkins..."
-            mkdir -p /var/lib/jenkins/.aws
-            echo "[default]" > /var/lib/jenkins/.aws/credentials
-            echo "aws_access_key_id=AKIAWN26KB25BRBD26NF" >> /var/lib/jenkins/.aws/credentials
-            echo "aws_secret_access_key=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" >> /var/lib/jenkins/.aws/credentials
-            chown -R jenkins:jenkins /var/lib/jenkins/.aws
-            '''
-        }
-    }
-}
-
 
         stage('Clone Repository') {
             steps {
@@ -54,57 +28,48 @@ pipeline {
 
         stage('Build') {
             steps {
-                script {
-                    sh '''
-                        echo "Building Java application..."
-                        mvn clean -B -Denforcer.skip=true package
-                    '''
-                }
+                sh '''
+                    echo "Building Java application..."
+                    mvn clean package -DskipTests
+                '''
             }
         }
 
-        stage('Login to AWS ECR') {
+        stage('Login to ECR') {
             steps {
-                script {
-                    sh '''
-                        echo "Logging into AWS ECR..."
-                        aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws
-                    '''
-                }
+                sh '''
+                    echo "Logging in to ECR..."
+                    aws ecr get-login-password --region ${AWS_REGION} | \
+                    docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+                '''
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                script {
-                    sh '''
-                        echo "Building Docker image..."
-                        docker build -t ${IMAGE_URI} .
-                    '''
-                }
+                sh '''
+                    echo "Building Docker image..."
+                    docker build -t ${IMAGE_URI} .
+                '''
             }
         }
 
-        stage('Push Docker Image to ECR') {
+        stage('Push Docker Image') {
             steps {
-                script {
-                    sh '''
-                        echo "Pushing Docker image to ECR..."
-                        docker push ${IMAGE_URI}
-                    '''
-                }
+                sh '''
+                    echo "Pushing Docker image..."
+                    docker push ${IMAGE_URI}
+                '''
             }
         }
-
-      
     }
-    
+
     post {
         success {
-            echo "Docker image pushed to ECR successfully and deployed."
+            echo "Pipeline executed successfully!"
         }
         failure {
-            echo "Pipeline failed."
+            echo "Pipeline failed!"
         }
     }
 }
