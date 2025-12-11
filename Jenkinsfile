@@ -68,7 +68,7 @@ pipeline {
             steps {
                 script {
                     sh '''
-                        echo "Building Docker image..."
+                        echo Building Docker image...
                         docker build -t ${IMAGE_URI} .
                     '''
                 }
@@ -79,7 +79,7 @@ pipeline {
             steps {
                 script {
                     sh '''
-                        echo "Pushing Docker image to ECR..."
+                        echo Pushing Docker image to ECR...
                         docker push ${IMAGE_URI}
                     '''
                 }
