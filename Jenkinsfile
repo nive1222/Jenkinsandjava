@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         GIT_REPO       = 'https://github.com/nive1222/Jenkinsandjava.git'
-        AWS_REGION     = 'ap-south-1'
+        AWS_REGION     = 'us-east-1'
         ECR_REPO_NAME  = 'paswan2527'
         AWS_ACCOUNT_ID = '843922065696'
         IMAGE_TAG      = 'latest'
